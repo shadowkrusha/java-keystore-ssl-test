@@ -8,6 +8,7 @@ import org.springframework.boot.SpringApplication;
 
 import javax.net.ssl.*;
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -67,18 +68,24 @@ public class Test implements ApplicationRunner {
                 logger.info("HTTPS Connection: setting custom handler");
             }
 
-            logger.info("Trying to connect to " + args.getNonOptionArgs().get(0));
-            InputStreamReader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
-            BufferedReader in = new BufferedReader(reader);
-
-            in.readLine();
+            InputStream stream = null;
 
             if (conn instanceof HttpURLConnection) {
                 int code = ((HttpURLConnection) conn).getResponseCode();
                 logger.info("Response status code received " + code);
+
+                if ( code >= 400) {
+                    stream = ((HttpURLConnection) conn).getErrorStream();
+                } else {
+                    stream = ((HttpURLConnection) conn).getInputStream();
+                }
             }
 
+            logger.info("Trying to connect to " + args.getNonOptionArgs().get(0));
+            InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
+            BufferedReader in = new BufferedReader(reader);
 
+            in.readLine();
 
             if (args.containsOption("forced")) {
                 connectionReport(conn);
